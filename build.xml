@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<project name="junx build file" default="doall" basedir=".">
+
+    <property name="classes" value="${basedir}/classes"/>    
+    <property name="tclasses" value="${basedir}/tclasses"/>    
+    <property name="dist" value="${basedir}/dist"/>
+    <property name="lib" value="${basedir}/lib"/>
+    <property name="web" value="${basedir}/web"/>
+    <property name="conf" value="${basedir}/conf"/>
+    <property name="doc" value="${basedir}/doc"/>
+    <property name="src" value="${basedir}/src"/>
+    <property name="tests" value="${basedir}/tests"/>
+    <property name="build.sysclasspath" value="last"/>
+    <property environment="env"/>
+    <property name="web_deploy" value="${env.WEB_DEPLOY}"/>
+
+    <target name="init">
+        <mkdir dir="${classes}"/>
+        <mkdir dir="${lib}"/>
+        <mkdir dir="${doc}/japi"/>
+    </target>
+
+    <target name="compile" depends="init">
+        <echo>building source</echo>
+        <javac destdir="${classes}" debug="true"
+               includeAntRuntime="false" srcdir="${src}">
+        </javac>
+    </target>
+
+    <target name="compileTests" depends="compile">
+        <echo>building tests</echo>
+        <javac destdir="${tclasses}" debug="true"
+               includeAntRuntime="false" srcdir="${tests}">
+        </javac>
+    </target>
+
+    <target name="jar" depends="compile">
+        <jar destfile="${lib}/junx.jar" basedir="${classes}" />
+    </target>
+
+    <target name="doc" depends="init">
+        <javadoc packagenames="*" destdir="${doc}/japi" sourcepath="${src}"/>
+    </target>
+
+    <target name="doall" depends="jar,doc" />
+
+</project>
