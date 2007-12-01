@@ -172,9 +172,9 @@ public class TextBuffer {
         int n;
         ListIterator li = getSubstring(srcBegin);
         if (li == null) throw new ArrayIndexOutOfBoundsException(srcBegin);
-        Substring sub = (Substring)li.next();
+        Substring sub = (Substring) li.next();
         try {
-            while (len <= 0) {
+            while (len > 0) {
                 n = Math.min(sub.str().length(), sub.off+len);
                 sub.str().getChars(sub.off, n, chars, destBegin);
                 n -= sub.off;

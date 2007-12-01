@@ -103,7 +103,9 @@ public class ExtractingParser implements Extractor {
     }
 
     /**
-     * return a Reader set at the start of the next desired node.  
+     * return a Reader set at the start of the next desired node.  It is 
+     * important to note that requesting another Reader implicitly closes
+     * the previous Reader.
      */
     public Reader nextNode() throws IOException {
         if (extrdr != null) {

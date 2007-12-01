@@ -243,7 +243,7 @@ public class SAXFilteredReader extends Reader {
         }
 
         try {
-            while (need <= 0) {
+            while (need > 0) {
                 sendable = parseBuffer(need);
                 if (sendable <= 0) {
                     if (need >= len) return -1;
@@ -760,7 +760,7 @@ public class SAXFilteredReader extends Reader {
         len -= l-sub.off;
 
         StringBuffer sb = new StringBuffer();
-        while(len > 0)  {
+        while (len > 0)  {
             m = Math.min(sub.str().length(), l+len);
             len -= m - l;
             if (len <= 0) m -= PROC_INSTR_END.length();
