@@ -2,6 +2,7 @@ Junx.  It stands for "Java XML Utilities from NCSA".
 
 Raymond Plante
 National Center for Supercomputing Applications
+National Virtual Observatory
 
 INTRODUCTION
 
@@ -30,7 +31,8 @@ SchemaLocation (ncsa.xml.validation):
    A class that provides a mechanism for maintaining a local cache of 
    XML Schema documents (xsd) that a validating parser can pull a
    schema from in lieu of downloading it from the document-specified 
-   location.  
+   location.  The ValidationUtils class is used to load the schemas
+   into a JAXP parser.  
 
 NamespaceMap (ncsa.xml.sax):
    A class that can keep track of the current set of namespace-prefix
@@ -44,7 +46,21 @@ SAX2XML (ncsa.xml.sax):
 BUILDING JUNX
 
 To build this package you will need:
-  1.  Java SDK 1.4.2 or later (available from https://java.sun.com)
+
+  1.  Java SDK (available from https://java.sun.com):
+
+      a.  If you want to use SchemaLocation to manage a local cache of 
+          XML Schema documents (xsd) with a validating (JAXP) parser,
+          then you must have:
+
+              Java SDK 1.5 or later 
+
+          (See also USING JUNX below).
+
+      b.  Otherwise, you can use:
+
+              Java SDK 1.4.2 or later
+
   2.  Apache Ant 1.6.5 or later
 
 Once you have installed these, you need to set up your environment to
@@ -74,6 +90,16 @@ example below [1]:
 
 To build, type "ant".  The result will be a JAR file called
 lib/junx.jar that is ready for use.  
+
+USING JUNX
+
+To use the Junx library, you can set your CLASSPATH variable to
+include lib/junx.jar.  
+
+If you want to use the ValidationUtils class to maintain a local cache
+of XML Schema documents to validate documents, then you should use Java
+1.5 or later.  Java 1.4.2 will not work out of the box.  With the
+proper version of Xerces installed, it is possible to get it to work.  
 
 API DOCUMENTATION
 
