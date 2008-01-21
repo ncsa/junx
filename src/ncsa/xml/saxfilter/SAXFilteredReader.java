@@ -997,6 +997,7 @@ public class SAXFilteredReader extends Reader {
 
         ListIterator li = buf.getSubstring(start);
         Substring sub = (Substring)li.next();
+
         int suboff = sub.off + 2;
         len -= 3;
         if (suboff+len > sub.str().length())
@@ -1153,9 +1154,11 @@ public class SAXFilteredReader extends Reader {
                 buf.insert(chars, bpos);
             }
 
-            // adjust our markers
-            if (bpos < parsed) parsed += chars.length();
-            if (bpos <= bi.pos()) bi.pos += chars.length();
+            // adjust our markers.  If bpos (the insert position relative 
+            // to the the start of the buffer) is at the parsed position or 
+            // before, we will interpret the new text as already parsed.
+            if (bpos <= parsed) parsed += chars.length();
+//             if (bpos <= bi.pos()) bi.pos += chars.length();
             if (pos <= loc.getCharNumber()) {
                 loc.setChars(loc.getCharNumber()+chars.length(), 
                              loc.getCharLength());
