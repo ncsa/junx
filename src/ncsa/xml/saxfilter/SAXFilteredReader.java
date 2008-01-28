@@ -1158,7 +1158,7 @@ public class SAXFilteredReader extends Reader {
             // to the the start of the buffer) is at the parsed position or 
             // before, we will interpret the new text as already parsed.
             if (bpos <= parsed) parsed += chars.length();
-//             if (bpos <= bi.pos()) bi.pos += chars.length();
+            if (bpos < bi.pos()) bi.pos += chars.length();
             if (pos <= loc.getCharNumber()) {
                 loc.setChars(loc.getCharNumber()+chars.length(), 
                              loc.getCharLength());
