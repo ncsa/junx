@@ -10,6 +10,17 @@ The genesis of this utilites package comes work supporting the NCSA
 BIMA Archive.  It contains general purpose XML utilities that I have
 useful on multiple occasions.  These include 
 
+Validate (ncsa.xml.validation):
+   an application that can be run from the command line to validate
+   XML documents against their XML Schemas.
+
+SchemaLocation (ncsa.xml.validation): 
+   A class that provides a mechanism for maintaining a local cache of 
+   XML Schema documents (xsd) that a validating parser can pull a
+   schema from in lieu of downloading it from the document-specified 
+   location.  The ValidationUtils class is used to load the schemas
+   into a JAXP parser.  
+
 ExtractingParser (ncsa.xml.extractor):  
    an XML parser that can be used to split nodes of an XML document
    out into separate documents.  In particular, this parser will
@@ -27,13 +38,6 @@ SAXFilteredReader (ncsa.xml.saxfilter):
    from the changes made by the content handler), including the
    original spacing, namespace prefixes, etc.  
 
-SchemaLocation (ncsa.xml.validation): 
-   A class that provides a mechanism for maintaining a local cache of 
-   XML Schema documents (xsd) that a validating parser can pull a
-   schema from in lieu of downloading it from the document-specified 
-   location.  The ValidationUtils class is used to load the schemas
-   into a JAXP parser.  
-
 NamespaceMap (ncsa.xml.sax):
    A class that can keep track of the current set of namespace-prefix
    mappings in scope while parsing an XML document (e.g. using SAX).  
@@ -49,9 +53,10 @@ To build this package you will need:
 
   1.  Java SDK (available from https://java.sun.com):
 
-      a.  If you want to use SchemaLocation to manage a local cache of 
-          XML Schema documents (xsd) with a validating (JAXP) parser,
-          then you must have:
+      a.  If you want to use Validate to validate XML documents or 
+          SchemaLocation to manage a local cache of XML Schema 
+          documents (xsd) with a validating (JAXP) parser, then you
+          must have:
 
               Java SDK 1.5 or later 
 
