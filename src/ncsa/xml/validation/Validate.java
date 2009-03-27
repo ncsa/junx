@@ -204,6 +204,7 @@ public class Validate {
      */
     public static void usage(PrintStream out) {
         out.println("validate [ -qh ] [ -S schemaLocFile ] xmlfile ...");
+        out.println("  -h      print this usage (ignore all other input)");
         out.println("  -q      print nothing to standard out; only set " + 
                               "the exit code");
         out.println("  -s      print nothing to standard out or error; only " + 
