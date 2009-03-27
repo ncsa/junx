@@ -23,7 +23,7 @@ if "%cp%"=="" (
 if "%cp%"=="" (
     echo Cannot find junx.jar (and no CLASSPATH set)
 ) else (
-    echo ${bin}java -cp $cp ncsa.xml.validation.Validate $*
+REM    echo ${bin}java -cp $cp ncsa.xml.validation.Validate $*
     exec ${bin}java -classpath $cp ncsa.xml.validation.Validate $*
 )
 
