@@ -8,7 +8,7 @@ INTRODUCTION
 
 The genesis of this utilites package comes work supporting the NCSA
 BIMA Archive.  It contains general purpose XML utilities that I have
-useful on multiple occasions.  These include 
+found useful on multiple occasions.  These include 
 
 Validate (ncsa.xml.validation):
    an application that can be run from the command line to validate
@@ -32,7 +32,7 @@ SAXFilteredReader (ncsa.xml.saxfilter):
    This reader sends an XML stream through a SAX parser that can,
    though a user-provided content handler, alter the stream in near-
    arbitrary ways, such as insert text, skip nodes, or substitute
-   elements with data from another file.  The text is that reaches the
+   elements with data from another file.  The text that reaches the
    client through the Reader interface, however, is not a
    re-serialized version, but the original character stream (apart
    from the changes made by the content handler), including the
