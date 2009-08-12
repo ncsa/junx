@@ -282,7 +282,14 @@ public class SAXFilteredReader extends Reader {
                 chandler.endDocument();
             }
         } catch (SAXException ex) {
-            throw new IOException("SAX processing error: " + ex.getMessage());
+            if (ex instanceof IOinSAXException &&
+                ((IOinSAXException)ex).getIOException() != null)
+            {
+                throw ((IOinSAXException)ex).getIOException();
+            } else {
+                throw new IOException("SAX processing error: " + 
+                                      ex.getMessage());
+            }
         }
 
         sendable = len-need;
@@ -369,9 +376,9 @@ public class SAXFilteredReader extends Reader {
                     try {
                         handleChars(parsed, p - lp, true);
                     } catch(SAXException ex) {
-                        if (strict)
-                            throw new IOException("SAX processing error: " + 
-                                                  ex.getMessage());
+                        if (strict) throw ex;
+//                             throw new IOException("SAX processing error: " + 
+//                                                   ex.getMessage());
                     }
 
                     // handler may have changed size of buffer; use global
@@ -401,9 +408,9 @@ public class SAXFilteredReader extends Reader {
 //                        try {
 //                            handleComment(parsed, p-lp);
 //                        } catch (SAXException ex) {
-//                          if (strict)
-//                            throw new IOException("SAX processing error: " +
-//                                                  ex.getMessage());
+//                          if (strict) throw ex;
+// //                           throw new IOException("SAX processing error: " +
+// //                                                 ex.getMessage());
 //                        }
 //                    }
                     parsed += p - lp;
@@ -428,9 +435,9 @@ public class SAXFilteredReader extends Reader {
                         try {
                             handleProcInstr(parsed, p - lp);
                         } catch(SAXException ex) {
-                          if (strict)
-                            throw new IOException("SAX processing error: " + 
-                                                  ex.getMessage());
+                            if (strict) throw ex;
+//                             throw new IOException("SAX processing error: " + 
+//                                                   ex.getMessage());
                         }
 
                         // handler may have changed size of buffer; use global
@@ -459,9 +466,9 @@ public class SAXFilteredReader extends Reader {
                             handleChars(parsed+CDATA_START.length(), 
                                         p-lp, false);
                         } catch(SAXException ex) {
-                          if (strict)
-                            throw new IOException("SAX processing error: " + 
-                                                  ex.getMessage());
+                            if (strict) throw ex;
+//                             throw new IOException("SAX processing error: " + 
+//                                                   ex.getMessage());
                         }
 
                         // handler may have changed size of buffer; use global
@@ -501,9 +508,9 @@ public class SAXFilteredReader extends Reader {
                                 handleStartElement(parsed, p - lp);
                             }
                         } catch(SAXException ex) {
-                          if (strict)
-                            throw new IOException("SAX processing error: " + 
-                                                  ex.getMessage());
+                            if (strict) throw ex;
+//                             throw new IOException("SAX processing error: " + 
+//                                                   ex.getMessage());
                         }
 
                         // handler may have changed size of buffer; use global
@@ -524,9 +531,9 @@ public class SAXFilteredReader extends Reader {
                     try {
                         handleChars(parsed, sub.str().length() - lp, true);
                     } catch(SAXException ex) {
-                        if (strict)
-                            throw new IOException("SAX processing error: " + 
-                                                  ex.getMessage());
+                        if (strict) throw ex;
+//                             throw new IOException("SAX processing error: " + 
+//                                                   ex.getMessage());
                     }
 
                     // handler may have changed size of buffer; use global
@@ -812,19 +819,18 @@ public class SAXFilteredReader extends Reader {
             return;
         }
         String elname = st.nextToken();
-        String qelname = EMPTYSTR;
+        String qelname = elname;
         String prefix = EMPTYSTR;
         String namesp = EMPTYSTR;
-        if (st.hasMoreTokens())
-            st.nextToken();
-        if (evts.isEnabled(evts.NAMESPACES)) {
-            qelname = elname;
+        {
             int p;
             if ((p = elname.indexOf(':')) >= 0) {
                 prefix = qelname.substring(0, p);
                 elname = qelname.substring(p + 1);
             }
         }
+        if (st.hasMoreTokens())
+            st.nextToken();
 
         // load attributes as desired
         AttributesImpl tmplist = new AttributesImpl();
@@ -1007,7 +1013,9 @@ public class SAXFilteredReader extends Reader {
         prefix = EMPTYSTR;
         namesp = EMPTYSTR;
 
-        HashSet prefixes = (HashSet) prefixHistory.pop();
+        HashSet prefixes = 
+            (prefixHistory.empty()) ? null : (HashSet) prefixHistory.pop();
+            
         if ((p = qelname.indexOf(':')) >= 0) {
             prefix = qelname.substring(0, p);
             elname = qelname.substring(p + 1);

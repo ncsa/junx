@@ -31,12 +31,12 @@ import org.xml.sax.Locator;
  * <p>
  * The easiest way to extract elements is to tell the parser which ones you 
  * want with a call to one of the {@link extractElement(String) 
- * extractElement()} elements to the extractElement() method.  Next, a call 
- * to the {@link #nextNode()} method will return a Reader that will extract 
- * the first element with one of the configured names encountered in the 
- * document along with all its contents (which may include elements of the 
- * same name.  The next call to {@link #nextNode()} will return the next 
- * desired element encountered after the end of the last extracted node.  
+ * extractElement()} methods.  Next, a call to the {@link #nextNode()} method 
+ * will return a Reader that will extract the first element with one of 
+ * the configured names encountered in the document along with all its 
+ * contents (which may include elements of the same name.  The next 
+ * call to {@link #nextNode()} will return the next desired element 
+ * encountered after the end of the last extracted node.  
  * 
  * <p>
  * Nodes can also be selected for extraction dynamically (i.e. based on the 
