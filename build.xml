@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
-<project name="junx build file" default="doall" basedir=".">
+<project xmlns:ivy="antlib:org.apache.ivy.ant"
+         name="junx build file" default="build" basedir=".">
 
     <property name="classes" value="${basedir}/classes"/>    
     <property name="tclasses" value="${basedir}/tclasses"/>    
@@ -20,9 +21,15 @@
         <mkdir dir="${doc}/japi"/>
     </target>
 
-    <target name="compile" depends="init">
+    <target name="resolve" depends="init"
+            description="--> retrieve dependencies with ivy">
+      <!-- <ivy:retrieve conf="build"/> -->
+      <ivy:cachepath pathid="build.classpath" conf="build" />
+    </target>
+
+    <target name="compile" depends="resolve">
         <echo>building source</echo>
-        <javac destdir="${classes}" debug="true"
+        <javac destdir="${classes}" debug="true" classpathref="build.classpath"
                includeAntRuntime="false" srcdir="${src}">
         </javac>
     </target>
@@ -42,6 +49,21 @@
         <javadoc packagenames="*" destdir="${doc}/japi" sourcepath="${src}"/>
     </target>
 
-    <target name="doall" depends="jar,doc" />
+    <target name="build" depends="jar,doc" />
+
+    <target name="clean" description="--> clean up uneeded intermediates">
+      <delete includeemptydirs="true">
+        <fileset dir="classes" />
+      </delete>
+    </target>
+
+    <target name="distclean" depends="clean"
+            description="--> restore to distribution state">
+      <delete includeemptydirs="true">
+        <fileset dir="doc/japi" />
+        <fileset dir="lib" />
+      </delete>
+    </target>
+
 
 </project>
