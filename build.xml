@@ -2,23 +2,31 @@
 <project xmlns:ivy="antlib:org.apache.ivy.ant"
          name="junx build file" default="build" basedir=".">
 
-    <property name="classes" value="${basedir}/classes"/>    
-    <property name="tclasses" value="${basedir}/tclasses"/>    
-    <property name="dist" value="${basedir}/dist"/>
-    <property name="lib" value="${basedir}/lib"/>
-    <property name="web" value="${basedir}/web"/>
-    <property name="conf" value="${basedir}/conf"/>
-    <property name="doc" value="${basedir}/doc"/>
-    <property name="src" value="${basedir}/src"/>
-    <property name="tests" value="${basedir}/tests"/>
-    <property name="build.sysclasspath" value="last"/>
+    <property name="build.dir" value="${basedir}/target"/>
+    <property name="classes.dir" value="${build.dir}/classes"/>    
+    <property name="tclasses.dir" value="${build.dir}/tclasses"/>    
+    <property name="testreport.dir" value="${build.dir}/testreports"/>    
+    <property name="dist.dir" value="${build.dir}/dist"/>
+    <property name="lib.dir" value="${basedir}/lib"/>
+    <property name="web.dir" value="${basedir}/web"/>
+    <property name="conf.dir" value="${basedir}/conf"/>
+    <property name="doc.dir" value="${basedir}/doc"/>
+    <property name="src.dir" value="${basedir}/src"/>
+    <property name="test.dir" value="${src.dir}/test"/>
+    <property name="jsrc.dir" value="${src.dir}/main/java"/>
+    <property name="tjsrc.dir" value="${test.dir}/java"/>
     <property environment="env"/>
     <property name="web_deploy" value="${env.WEB_DEPLOY}"/>
 
     <target name="init">
-        <mkdir dir="${classes}"/>
-        <mkdir dir="${lib}"/>
-        <mkdir dir="${doc}/japi"/>
+        <mkdir dir="${classes.dir}"/>
+        <mkdir dir="${lib.dir}"/>
+        <mkdir dir="${doc.dir}/japi"/>
+    </target>
+
+    <target name="initTests">
+        <mkdir dir="${tclasses.dir}"/>
+        <mkdir dir="${testreport.dir}"/>
     </target>
 
     <target name="resolve" depends="init"
@@ -29,24 +37,50 @@
 
     <target name="compile" depends="resolve">
         <echo>building source</echo>
-        <javac destdir="${classes}" debug="true" classpathref="build.classpath"
-               includeAntRuntime="false" srcdir="${src}">
+        <javac destdir="${classes.dir}" debug="true" 
+               classpathref="build.classpath"
+               includeAntRuntime="false" srcdir="${jsrc.dir}">
         </javac>
     </target>
 
-    <target name="compileTests" depends="compile">
+    <target name="compileTests" depends="initTests,compile">
         <echo>building tests</echo>
-        <javac destdir="${tclasses}" debug="true"
-               includeAntRuntime="false" srcdir="${tests}">
+        <javac destdir="${tclasses.dir}" debug="true" 
+               includeAntRuntime="false" srcdir="${tjsrc.dir}">
+          <classpath>
+            <pathelement path="${classes.dir}" />
+            <path refid="build.classpath" />
+            <fileset dir="${ant.library.dir}" />
+          </classpath>
         </javac>
+    </target>
+
+    <target name="test" depends="compileTests">
+        <junit printsummary="yes" haltonfailure="yes">
+          <classpath>
+            <pathelement path="${tclasses.dir}" />
+            <pathelement path="${classes.dir}" />
+            <path refid="build.classpath" />
+            <fileset dir="${ant.library.dir}" />
+          </classpath>
+
+          <formatter type="plain" />
+
+          <batchtest todir="${testreport.dir}">
+            <fileset dir="${tclasses.dir}">
+              <include name="**/*Test.class" />
+              <exclude name="**/AllTests.class" />
+            </fileset>
+          </batchtest>
+        </junit>
     </target>
 
     <target name="jar" depends="compile">
-        <jar destfile="${lib}/junx.jar" basedir="${classes}" />
+        <jar destfile="${lib.dir}/junx.jar" basedir="${classes.dir}" />
     </target>
 
     <target name="doc" depends="init">
-        <javadoc packagenames="*" destdir="${doc}/japi" sourcepath="${src}"/>
+        <javadoc packagenames="*" destdir="${doc.dir}/japi" sourcepath="${jsrc.dir}"/>
     </target>
 
     <target name="build" depends="jar,doc" />

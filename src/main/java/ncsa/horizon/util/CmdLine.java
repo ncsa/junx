@@ -79,7 +79,7 @@ import java.util.*;
  *     // parse the command line
  *     try {
  *	   cl.setCmdLine(args); 
- *     } catch (UnrecognizedOptionException ex) {
+ *     } catch (CmdLine.UnrecognizedOptionException ex) {
  *         // this exception won't be thrown if RELAX is given as a flag;
  *         // however, if it isn't given, you can put your bail-out code
  *         // here
@@ -428,7 +428,7 @@ public class CmdLine {
 
     /**
      * return the options that this object is configured to look for 
-     * in the form of an Enumeration
+     * in the form of an Enumeration.  Each element is a Character type. 
      */
     public synchronized Enumeration options() {
         return options.keys();
@@ -437,15 +437,25 @@ public class CmdLine {
     /**
      * return the arguments found in this command line in the form of 
      * an Enumeration
+     * @throws IllegalStateException  if class has not yet been initialized 
+     * with a set of arguments yet (either via constructor or setCmdLine()).
      */
     public synchronized Enumeration arguments() {
+        if (argList == null) 
+            throw new IllegalStateException("command line not yet set");
         return argList.elements();
     }
 
     /**
      * return the number of arguments found in this argument list 
+     * @throws IllegalStateException  if class has not yet been initialized 
+     * with a set of arguments yet (either via constructor or setCmdLine()).
      */
-    public synchronized int getNumArgs() { return argList.size(); }
+    public synchronized int getNumArgs() { 
+        if (argList == null) 
+            throw new IllegalStateException("command line not yet set");
+        return argList.size(); 
+    }
 
     /**
      * break a String containing a list of items into an array of 
