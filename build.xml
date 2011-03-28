@@ -2,40 +2,37 @@
 <project xmlns:ivy="antlib:org.apache.ivy.ant"
          name="junx build file" default="build" basedir=".">
 
-    <property name="build.dir" value="${basedir}/target"/>
-    <property name="classes.dir" value="${build.dir}/classes"/>    
-    <property name="tclasses.dir" value="${build.dir}/tclasses"/>    
-    <property name="testreport.dir" value="${build.dir}/testreports"/>    
-    <property name="dist.dir" value="${build.dir}/dist"/>
-    <property name="lib.dir" value="${basedir}/lib"/>
-    <property name="web.dir" value="${basedir}/web"/>
-    <property name="conf.dir" value="${basedir}/conf"/>
-    <property name="doc.dir" value="${basedir}/doc"/>
-    <property name="src.dir" value="${basedir}/src"/>
-    <property name="test.dir" value="${src.dir}/test"/>
-    <property name="jsrc.dir" value="${src.dir}/main/java"/>
-    <property name="tjsrc.dir" value="${test.dir}/java"/>
-    <property environment="env"/>
-    <property name="web_deploy" value="${env.WEB_DEPLOY}"/>
+    <property name="useIvy" value="true" />
 
-    <target name="init">
-        <mkdir dir="${classes.dir}"/>
-        <mkdir dir="${lib.dir}"/>
-        <mkdir dir="${doc.dir}/japi"/>
+    <import file="build-vao.xml" as="vao"/>
+
+    <!--
+      -  Initialize the project
+      -->
+    <target name="init" depends="vao.initOutputDirs,vao.ivyCheck" />
+
+    <target name="initTests" depends="vao.initTestDirs" />
+
+    <target name="resolve" depends="vao.resolve">
+      <!--
+        -  This will:
+        -  1.  fetch any dependencies needed (if useIvy=true and ivy is 
+        -      available)
+        -  2.  set the various classpaths:
+        -      build.classpath - needed for building but not for running; 
+        -        by default, includes all jar files in ./lib and any jars 
+        -        required from the local artifact repository.
+        -      run.classpath - needed only at runtime; by default, includes
+        -        all jar files in ./lib, including junx.jar
+        -      debug.classpath - useful for debugging; by default, includes
+        -        target/classes and the contents of run.classpath
+        -      test.classpath - useful for running tests; by default, includes
+        -        target/tclasses, target/classes, and the contents of 
+        -        run.classpath
+        -->
     </target>
 
-    <target name="initTests">
-        <mkdir dir="${tclasses.dir}"/>
-        <mkdir dir="${testreport.dir}"/>
-    </target>
-
-    <target name="resolve" depends="init"
-            description="--> retrieve dependencies with ivy">
-      <!-- <ivy:retrieve conf="build"/> -->
-      <ivy:cachepath pathid="build.classpath" conf="build" />
-    </target>
-
-    <target name="compile" depends="resolve">
+    <target name="compile" depends="init,resolve">
         <echo>building source</echo>
         <javac destdir="${classes.dir}" debug="true" 
                classpathref="build.classpath"
@@ -46,23 +43,13 @@
     <target name="compileTests" depends="initTests,compile">
         <echo>building tests</echo>
         <javac destdir="${tclasses.dir}" debug="true" 
-               includeAntRuntime="false" srcdir="${tjsrc.dir}">
-          <classpath>
-            <pathelement path="${classes.dir}" />
-            <path refid="build.classpath" />
-            <fileset dir="${ant.library.dir}" />
-          </classpath>
-        </javac>
+               includeAntRuntime="true" srcdir="${tjsrc.dir}"
+               classpathref="build.test.classpath" />
     </target>
 
     <target name="test" depends="compileTests">
-        <junit printsummary="yes" haltonfailure="yes">
-          <classpath>
-            <pathelement path="${tclasses.dir}" />
-            <pathelement path="${classes.dir}" />
-            <path refid="build.classpath" />
-            <fileset dir="${ant.library.dir}" />
-          </classpath>
+        <junit printsummary="yes"  includeAntRuntime="true" haltonfailure="yes">
+          <classpath refid="test.classpath" />
 
           <formatter type="plain" />
 
@@ -80,20 +67,21 @@
     </target>
 
     <target name="doc" depends="init">
-        <javadoc packagenames="*" destdir="${doc.dir}/japi" sourcepath="${jsrc.dir}"/>
+        <javadoc packagenames="*" destdir="${doc.dir}/japi" 
+                 sourcepath="${jsrc.dir}" />
     </target>
 
     <target name="build" depends="jar,doc" />
 
     <target name="clean" description="--> clean up uneeded intermediates">
-      <delete includeemptydirs="true">
+      <delete includeemptydirs="true" failonerror="false">
         <fileset dir="classes" />
       </delete>
     </target>
 
     <target name="distclean" depends="clean"
             description="--> restore to distribution state">
-      <delete includeemptydirs="true">
+      <delete includeemptydirs="true" failonerror="false">
         <fileset dir="doc/japi" />
         <fileset dir="lib" />
       </delete>

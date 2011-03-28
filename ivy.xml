@@ -1,9 +1,10 @@
 <ivy-module version="2.0">
-    <info organisation="ncsa" module="junx"/>
-    <configurations>
-      <conf name="build" description="needed to compile but not run" />
-    </configurations>
-    <dependencies>
-        <dependency org="xerces" name="xercesImpl" rev="2.7.1"/>
-    </dependencies>
+  <info organisation="ncsa" module="junx"/>
+  <configurations>
+    <conf name="build" description="needed to compile but not run" />
+    <conf name="run" description="needed to run" />
+  </configurations>
+  <dependencies>
+    <dependency org="xerces" name="xercesImpl" rev="2.7.1" conf="build->*"/>
+  </dependencies>
 </ivy-module>

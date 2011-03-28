@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<project xmlns:ivy="antlib:org.apache.ivy.ant"
+         name="vao build macros" default="build">
+
+  <property name="build.layout.file" value="build-layout.xml" />
+
+  <import file="${build.layout.file}" as="vao"/>
+
+  <target name="ivyCheck" depends="vao.initOutputDirs">
+    <!--
+      -  Assume Ivy is available if it isn't turned off and the jar
+      -  file is installed either in lib or in our ant installation.
+      -->
+    <condition property="ivyAvail">
+      <and>
+        <istrue value="${useIvy}" />
+        <available classname="org.apache.ivy.Main" >
+          <classpath>
+            <path refid="local.jar.path" />
+            <fileset dir="${ant.library.dir}" />
+          </classpath>
+        </available>
+      </and>
+    </condition>
+  </target>
+
+  <target name="ivyResolve" depends="init" if="ivyAvail"
+          description="--> retrieve dependencies with ivy">
+    <ivy:cachepath pathid="repos.classpath" conf="build" />
+    <ivy:retrieve conf="run"/>
+  </target>
+  <target name="nullResolve" depends="init" unless="ivyAvail"
+          description="--> assume dependencies are in lib">
+    <echo>Dependency Resolution disabled; be sure you have dependencies installed in lib.</echo>
+    <path id="repos.classpath" />
+  </target>
+
+  <target name="resolve" depends="ivyResolve,nullResolve"
+          description="--> resolve dependencies if possible" >
+
+    <path id="build.classpath">
+      <path refid="local.jar.path"/>
+      <path refid="repos.classpath"/>
+    </path>
+
+    <path id="run.classpath">
+      <path refid="local.jar.path"/>
+    </path>
+
+    <path id="debug.classpath">
+      <pathelement path="${build.dir}/classes" />
+      <path refid="run.classpath"/>
+    </path>
+
+    <path id="test.classpath">
+      <pathelement path="${build.dir}/tclasses" />
+      <pathelement path="${build.dir}/classes" />
+      <path refid="run.classpath"/>
+    </path>
+
+    <path id="build.test.classpath">
+      <pathelement path="${build.dir}/classes" />
+      <path refid="run.classpath"/>
+    </path>
+  </target>
+</project>

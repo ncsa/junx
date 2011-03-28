@@ -138,7 +138,6 @@ public class CmdLineTest {
         } catch (CmdLine.UnrecognizedOptionException ex) { 
             fail("failed to relax");
         }
-
     }
         
 }
