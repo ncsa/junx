@@ -15,7 +15,7 @@ public class CmdLineTest {
 
     private static String config = "f:puqx-";
     private static String opts = "fpuqx";
-    private static String[] args = "-qu -f file.txt -x -hello".split(" ");
+    private static String[] args = "-quq -q -f file.txt -x -hello world".split(" ");
     private CmdLine cl = null;
 
     @Before
@@ -48,7 +48,7 @@ public class CmdLineTest {
         assertEquals(cl.getFlags(), CmdLine.NULLFLAG);
     }
 
-    @Test public void testOptions() {
+    @Test public void testOptionsDef() {
         StringBuffer set = new StringBuffer();
         for(Enumeration e=cl.options(); e.hasMoreElements();) {
             Character opt = (Character) e.nextElement();
@@ -139,6 +139,61 @@ public class CmdLineTest {
             fail("failed to relax");
         }
     }
-        
+
+    private void setCmdLine() {
+        cl.setFlags(CmdLine.RELAX);
+        try {
+            cl.setCmdLine(args);
+        } catch (CmdLine.UnrecognizedOptionException ex) { 
+            fail("failed to relax");
+        }
+    }
+
+    @Test public void testSetCmdLine() {
+        setCmdLine();
+
+        assertEquals("Wrong number of arguments detected", 
+                     cl.getNumArgs(), 2);
+        assertEquals("Wrong number of arguments detected", 
+                     cl.getNumArgs(), 2);
+    }
+
+    @Test public void testOptions() {
+        setCmdLine();
+
+        assertTrue(cl.isSet('q'));
+        assertTrue(cl.isSet('u'));
+        assertTrue(cl.isSet('x'));
+        assertFalse(cl.isSet('p'));
+        assertFalse(cl.isSet('e'));
+        assertFalse(cl.isSet('r'));
+
+        assertEquals("Bad option occurance count", cl.getNumSet('q'), 3);
+
+        assertEquals("Bad option arg", cl.getValue('f'), "file.txt");
+    }
+
+    @Test public void testArguments() {
+        String[] expected = "-hello world".split(" ");
+
+        setCmdLine();
+        int i=0;
+        StringBuffer extra = new StringBuffer();
+        for(Enumeration e = cl.arguments(); e.hasMoreElements(); i++){
+            String s = (String) e.nextElement();
+            if (i < expected.length)          
+                assertEquals(format("Argument out of order: %s", s),
+                             s, expected[i]);
+            else
+                extra.append(' ').append(s);
+        }
+        assertTrue(format("extra arguments found:%s",extra), 
+                   i <= expected.length);
+        if (i < expected.length) {
+            for(; i < expected.length; i++) 
+                extra.append(' ').append(expected[i]);
+            fail(format("missing arguments:%s",extra));
+        }
+    }
 }
     
