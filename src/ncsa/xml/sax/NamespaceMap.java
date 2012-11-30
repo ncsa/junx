@@ -247,7 +247,7 @@ public class NamespaceMap implements Namespaces, Cloneable {
             pre2ns.setProperty("", "");
             ns2pre = new Properties();
             ns2pre.setProperty("", "");
-            ns2pre = new Properties();
+            ns2loc = new Properties();
         }
 
         public Snapshot(Snapshot parent) {
