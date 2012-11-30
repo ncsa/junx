@@ -845,13 +845,49 @@ public class SAXFilteredReader extends Reader {
 
             while (st.hasMoreTokens()) {
                 attr = st.nextToken();
+                if (Character.isWhitespace(attr.charAt(0))) continue;
 
                 // parse attribute name and value
                 p = attr.indexOf('=');
-                if (p < 0 || p > attr.length()-3) {
+                if (p < 1 || p > attr.length()-3) {
                     if (strict)
                         throw new SAXException("bad attribute syntax: " + attr);
-                    continue;
+                    if (st.hasMoreTokens()) {
+                        // being lenient for errant spaces around = in attributes
+                        // (for HEASARC)
+                        String tmp = st.nextToken();
+                        while (st.hasMoreTokens() && 
+                               (tmp.length() == 0 || tmp.charAt(0) == ' '))
+                            tmp = st.nextToken();
+                        p = tmp.indexOf('=');
+                        if (p == 0) {
+                            // ignore space before =
+                            p = attr.length();
+                            attr += tmp;
+                            if (tmp.length() == 1) {
+                                // ignore space after =
+                                if (! st.hasMoreTokens()) continue;
+                                tmp = st.nextToken();
+                                while (st.hasMoreTokens() && 
+                                       (tmp.length()==0 || tmp.charAt(0)==' '))
+                                    tmp = st.nextToken();
+                                if (tmp.length()==0 || 
+                                    Character.isWhitespace(tmp.charAt(0)))
+                                  continue;
+                                attr += tmp;
+                            }
+                        }
+                        else if (p < 0 || p > tmp.length()-3) {
+                            // give up
+                            continue;
+                        }
+                        else {
+                            attr = tmp;
+                        }
+                    }
+                    else {
+                        continue;
+                    }
                 } 
                 lname = attr.substring(0, p);
                 qname = EMPTYSTR;
@@ -986,6 +1022,8 @@ public class SAXFilteredReader extends Reader {
                         it.hasNext(); 
                         chandler.endPrefixMapping((String)it.next()));
                 }
+
+                prefixHistory.pop();
             }
         }
     }
@@ -995,7 +1033,7 @@ public class SAXFilteredReader extends Reader {
     {
         if (chandler == null) return;
         int q, p;
-        String prefix, elname, qelname, namesp;
+        String prefix, elname, qelname, namesp, uri;
 
         // update the locator
         pending = parsed+len;
@@ -1021,8 +1059,10 @@ public class SAXFilteredReader extends Reader {
             elname = qelname.substring(p + 1);
         }
 
+        uri = namespaces.getURI(prefix);
+        if (uri == null) uri = EMPTYSTR;
+        chandler.endElement(uri, elname, qelname);
         namespaces.endElement();
-        chandler.endElement(EMPTYSTR, elname, qelname);
 
         // update the scope of namespace prefixes as necessary
         if (prefixes != null && 
