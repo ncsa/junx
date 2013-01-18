@@ -170,6 +170,24 @@ public class ExtractingParser implements Extractor {
         exportElements.add(qname);
     }
 
+    /**
+     * return a prolog to insert after the XML Declaration.  This may 
+     * be different with each call.  This default implementation returns 
+     * null, indicating that no prolog should be inserted.  This can be 
+     * overridden by subclasses to specialize the wrapping of the output 
+     * documents.  
+     */
+    protected String getExportProlog() { return null;  }
+
+    /**
+     * return a epilog append after the end of the closing element.  This may 
+     * be different with each call.  This default implementation returns 
+     * null, indicating that no epilog should be appended.  This can be 
+     * overridden by subclasses to specialize the wrapping of the output 
+     * documents.  
+     */
+    protected String getExportEpilog() { return null;  }
+
     class FlowECBridge implements ExportController {
         public FlowECBridge() { }
 
@@ -187,6 +205,8 @@ public class ExtractingParser implements Extractor {
             return exportDepth > 0;
         }
     }
+
+    
 
     class ExportingHandler implements SAXFilterContentHandler {
         OnDemandParser prm = null;
@@ -402,7 +422,10 @@ public class ExtractingParser implements Extractor {
             if (scnr != null) scnr.endElement(namespaceURI, localName, qName);
             if (exportDepth > 0) {
                 exportDepth--;
-                if (exportDepth <= 0) endExport();
+                if (exportDepth <= 0) {
+                    try {  endExport(); }
+                    catch (IOException ex) { throw new SAXException(ex);  }
+                }
             }
         }
 
@@ -452,13 +475,23 @@ public class ExtractingParser implements Extractor {
             flow.resumeFrom(flow.getCharLocator().getCharNumber());
             if (standalone && xmldecl != null)
                 flow.insert(xmldecl, flow.getCharLocator().getCharNumber());
+
+            // add a preamble (after the XML Decl.), if available
+            String preamble = getExportProlog();
+            if (preamble != null && preamble.length() > 0)
+                flow.insert(preamble, flow.getCharLocator().getCharNumber());
         }
 
-        protected void endExport() {
+        protected void endExport() throws IOException {
             long end = flow.getCharLocator().getCharNumber() + 
                 flow.getCharLocator().getCharLength();
             flow.skipFrom(end);
             flow.addPauseMarker(end);
+
+            // add an epilog, if available
+            String epilog = getExportEpilog();
+            if (epilog != null && epilog.length() > 0)
+                flow.insert(epilog, flow.getCharLocator().getCharNumber());
         }
     }
 
