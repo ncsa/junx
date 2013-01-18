@@ -212,6 +212,9 @@ public class SchemaLocation implements Cloneable {
         String line = null, ns = null, word = null;
         StringTokenizer tok;
         while ((line = rdr.readLine()) != null) {
+            line = line.trim();
+            if (line.length() == 0 || line.charAt(0) == '#') continue;
+
             tok = new StringTokenizer(line);
             while (tok.hasMoreTokens()) {
                 word = tok.nextToken();
