@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # verify an XML instance document using Apache Xerces
 #
@@ -32,8 +32,8 @@ elif [ -n "$CLASSPATH" ]; then
     cp=$CLASSPATH
 else
     bindir=`dirname $prog`/
-    if [ -e "${bindir}../lib/java/junx.jar" ]; then
-        cp=${bindir}../lib/java/junx.jar
+    if [ -e "${bindir}../lib/junx.jar" ]; then
+        cp=${bindir}../lib/junx.jar
     fi
 fi
 
@@ -47,22 +47,6 @@ if [ -n "$JAVA_HOME" ]; then
    bin=$JAVA_HOME/bin/
 fi
 
-find() {
-    for ((i=2; i <= $#; i++)); do
-        if { echo ${!i} | grep -sq ^$1; }; then
-            (( i-- ))
-            echo $i
-            return 0
-        fi
-    done
-    return 1
-}
-ARGS=($@)
-DEBUG_EXEC=`find -D ${ARGS[@]}`
-if [ -n "$DEBUG_EXEC" ]; then
-    ARGS=(${ARGS[@]:0:$(($DEBUG_EXEC - 1))} ${ARGS[@]:$DEBUG_EXEC})
-    echo ${bin}java -cp $cp ncsa.xml.validation.Validate ${ARGS[*]}
-fi
-
-exec ${bin}java -classpath $cp ncsa.xml.validation.Validate ${ARGS[*]}
+# echo ${bin}java -cp $cp ncsa.xml.validation.Validate $*
+exec ${bin}java -classpath $cp ncsa.xml.validation.Validate $*
 
