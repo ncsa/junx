@@ -3,6 +3,8 @@ package ncsa.xml.sax;
 import java.util.Properties;
 import java.util.Enumeration;
 import java.util.Stack;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.StringTokenizer;
 
 /**
@@ -10,6 +12,29 @@ import java.util.StringTokenizer;
  * XML hierarchy.  This class provides an interface for updating the 
  * mappings while traversing or parsing an XML document (e.g. in the context
  * of a SAX parser).  
+ * <p>
+ * There are four functions one will use to update the set of namespaces in 
+ * currency, listed here in the order that they are called:
+ * <ol>
+ *  <li> {@link #startPrefixMapping() startPrefixMapping()} / 
+ *       {@link #setDefaultNS() setDefaultNS()} </li>
+ *  <li> {@link #startElement() startElement()} </li>
+ *  <li> {@link #endElement() endElement()} </li>
+ * </ol>
+ * If when entering an element there are no new namespaces are defined, then 
+ * {@link #startPrefixMapping() startPrefixMapping()} and 
+ * {@link #setDefaultNS() setDefaultNS()} need not be called.  Normally,
+ * it is <em>not</em> necessary to call 
+ * {@link #endPrefixMapping() endPrefixMapping()}.
+ * <p>
+ * This order corresponds to the order in which SAX ContentHandler calls are 
+ * made with one exception: {@link #endPrefixMapping() endPrefixMapping()}
+ * should not be called (it is retained for backward compatibility but is 
+ * gutted of functionality).  Prefix mappings are discontinued automatically
+ * via the call to {@link #endPrefixMapping() endPrefixMapping()}.  If one 
+ * wishes to remove a prefix mapping prior to a call to 
+ * {@link #endElement() endElement()}, one can call 
+ * {@link #endPrefixMapping() endPrefixMapping()}.  
  */
 public class NamespaceMap implements Namespaces, Cloneable {
 
@@ -18,7 +43,7 @@ public class NamespaceMap implements Namespaces, Cloneable {
     final int REMOVING = 2;
     private Stack history = new Stack();
     private Snapshot cur = new Snapshot();
-    private int state = 0;
+    private int state = READY;
     private int validityDepth = 0;
     private static int anoncounter = 0;
 
@@ -28,12 +53,27 @@ public class NamespaceMap implements Namespaces, Cloneable {
     public NamespaceMap() { }
 
     /**
-     * register a prefix mapping that is now in scope with the current location
-     * in the XML document being traversed.
+     * register a prefix mapping that will be coming into scope with entering 
+     * a new element.  A call to {@link #startElement() startElement()} should
+     * be made after completing all calls to this method (and 
+     * {@link #setDefaultNS() setDefaultNS()}).  If one wants to add a 
+     * namespace in the current element context <em>after</em> the call to 
+     * {@link #startElement() startElement()}, one should call 
+     * {@link #addPrefixMapping() addPrefixMapping()}.  
      */
     public synchronized void startPrefixMapping(String prefix, String uri) {
-        if(state == 2) doneRemoving();
-        if(state == 0) setAddingState();
+        if(state == READY) setAddingState();
+        cur.addMapping(prefix, uri);
+    }
+
+    /**
+     * add a prefix mapping that is not associated with the change of the
+     * element context.  Normally during an XML traversal, this method 
+     * would <em>not</em> be called.  It is available for adding namespaces
+     * to the current context after a call to 
+     * {@link #startElement() startElement()}.  
+     */
+    public synchronized void addPrefixMapping(String prefix, String uri) {
         cur.addMapping(prefix, uri);
     }
 
@@ -42,25 +82,32 @@ public class NamespaceMap implements Namespaces, Cloneable {
         history.push(cur);
         cur = new Snapshot(cur);
         validityDepth = 0;
-        state = 1;
+        state = ADDING;
     }
 
-    void doneRemoving() {
-        if(validityDepth <= 0 && history.size() > 0)
-        {
+    void exitElementContext() {
+        if (validityDepth <= 0 && history.size() > 0) {
             cur = (Snapshot)history.pop();
             validityDepth = cur.validityDepth;
         }
-        state = 0;
+        state = READY;
     }
 
     /**
-     * unregister a prefix mapping that is now going out of scope.  This 
-     * may be called if the position in the XML document moves upward.  
+     * @deprecated
+     * declare the end of a prefix mapping.  This function is deprecated in 
+     * favor of removePrefixMapping(), and this function does nothing.  
      */
-    public synchronized void endPrefixMapping(String prefix) {
+    public void endPrefixMapping(String prefix) { }
+
+    /**
+     * unregister a prefix mapping that is now going out of scope.  Typically
+     * it is not necessary to call this function; when endElement is called,
+     * prefixes defined at that level will disappear.  This may be called if 
+     * the mapping should be removed prior to an endElement() call.  
+     */
+    public synchronized void removePrefixMapping(String prefix) {
         cur.removeMapping(prefix);
-        state = 2;
     }
 
     /**
@@ -69,11 +116,7 @@ public class NamespaceMap implements Namespaces, Cloneable {
      * are in scope.
      */
     public synchronized void startElement() {
-        if(state == 1)
-            state = 0;
-        else
-        if(state == 2 || validityDepth <= 0)
-            doneRemoving();
+        if(state == ADDING) state = READY;
         validityDepth++;
     }
 
@@ -81,9 +124,38 @@ public class NamespaceMap implements Namespaces, Cloneable {
      * register the close of an Element.  This is called to help this object
      * keep track of where it is in the hierarchy and determine which prefixes
      * are in scope.
+     * <p>
+     * Note that when this method is called, all prefixes defined at this
+     * element will go out of scope (and the default namespace may change).
+     * Thus, if the caller is a SAX pareser doing prefix mapping, it should
+     * instead call {@link #endElement(Set<String>)} to get the prefixes 
+     * that are going out of scope.  
      */
     public void endElement() {
+        endElement(null);
+    }
+
+    /**
+     * register the close of an Element.  This is called to help this object
+     * keep track of where it is in the hierarchy and determine which prefixes
+     * are in scope.  This version of endElement() allows one to get a set of 
+     * the prefixes going out of scope.  
+     * <p>
+     * Note that when this method is called, all prefixes defined at this
+     * element will go out of scope (and the default namespace may change).
+     * @param prefixes  a container into which the prefixes that are going 
+     *                    out of scope will be added.  Note that, depending on 
+     *                    how namespaces were declared, some of these prefixes 
+     *                    may actually remain in scope, either with the same 
+     *                    or different namespace mapping.
+     */
+    public void endElement(Set<String> prefixes) {
+        if (prefixes != null && cur.prefixes != null) {
+            for (String prefix : cur.prefixes) 
+                prefixes.add(prefix);
+        }
         validityDepth--;
+        exitElementContext();
     }
 
     /**
@@ -120,6 +192,15 @@ public class NamespaceMap implements Namespaces, Cloneable {
     }
 
     /**
+     * return (a copy of) the set of prefixes that will go out of scope
+     * when endElement is called next.  Any prefixes that have been undefined
+     * via {@link #} will not be included.  
+     */
+    public Set<String> pendingPrefixes() {
+        return cur.getPrefixes();
+    }
+
+    /**
      * return an enumeration of the currently defined namespaces
      */
     public Enumeration uris() {
@@ -148,7 +229,7 @@ public class NamespaceMap implements Namespaces, Cloneable {
      * @param loc  the location URL
      */
     public void addLocation(String ns, String loc) {
-        if(state == 0)
+        if(state == READY)
             setAddingState();
         cur.addLocation(ns, loc);
     }
@@ -234,15 +315,12 @@ public class NamespaceMap implements Namespaces, Cloneable {
         public Properties pre2ns = null;
         public Properties ns2pre = null;
         public Properties ns2loc = null;
+        public HashSet<String> prefixes = null;
         public int validityDepth = 0;
         static final String CLN = ":";
         static final String empty = "";
 
         public Snapshot() {
-            pre2ns = null;
-            ns2pre = null;
-            ns2loc = null;
-            validityDepth = 0;
             pre2ns = new Properties();
             pre2ns.setProperty("", "");
             ns2pre = new Properties();
@@ -274,9 +352,16 @@ public class NamespaceMap implements Namespaces, Cloneable {
                 throw new NullPointerException("Null URI given");
             if(prefix == null) 
                 throw new NullPointerException("Null prefix given");
+            if (prefixes == null) prefixes = new HashSet();
 
+            prefixes.add(prefix);
             pre2ns.setProperty(prefix, uri);
             ns2pre.setProperty(uri, prefix);
+        }
+
+        public Set getPrefixes() {
+            return (prefixes == null) ? new HashSet<String>() 
+                                      : new HashSet<String>(prefixes);
         }
 
         public void addLocation(String namespace, String loc)
@@ -291,6 +376,7 @@ public class NamespaceMap implements Namespaces, Cloneable {
             String uri = (String)pre2ns.remove(prefix);
             if(uri != null)
                 ns2pre.remove(uri);
+            if (prefixes != null) prefixes.remove(prefix);
         }
 
     }

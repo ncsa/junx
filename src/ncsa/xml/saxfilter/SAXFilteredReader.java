@@ -50,7 +50,6 @@ public class SAXFilteredReader extends Reader {
     private boolean eof = false;
     private boolean started = false;
     private boolean parseAhead = false;
-    private Stack prefixHistory = new Stack();
 
     // the trail of breadcrumbs indicating where flow should be turned on/off
     private SkipSchedule skip = new SkipSchedule(false);
@@ -75,7 +74,6 @@ public class SAXFilteredReader extends Reader {
     private int pending = parsed;
 
     private ParseRequestMgr prq = null;
-    private Stack prefixes = null;
     private NamespaceMap namespaces = new NamespaceMap();
 
     private PauseMarkers pmarks = null;
@@ -836,12 +834,9 @@ public class SAXFilteredReader extends Reader {
         AttributesImpl tmplist = new AttributesImpl();
         AttributesImpl attrlist = tmplist;
         StringBuffer aval = null;
-        HashSet prefixes = null;
         if (evts.anyEnabled(evts.ATTRIBUTES|evts.NAMESPACES)) {
             String attr, qname, nsname, pname, lname;
             int p, q;
-            prefixes = new HashSet();
-            prefixHistory.push(prefixes);
 
             while (st.hasMoreTokens()) {
                 attr = st.nextToken();
@@ -942,7 +937,6 @@ public class SAXFilteredReader extends Reader {
                         if (evts.isEnabled(evts.PREFIX_MAPPING)) {
                             if (pname.equals("xmlns")) {
                                 // register a namespace definition
-                                prefixes.add(lname);
                                 namespaces.startPrefixMapping(lname, value);
                                 chandler.startPrefixMapping(lname, value);
                             } 
@@ -955,7 +949,6 @@ public class SAXFilteredReader extends Reader {
                              qname.equals("xmlns"))
                     {
                         nsname = value;
-                        prefixes.add(EMPTYSTR);
                         namespaces.setDefaultNS(nsname);
                         chandler.startPrefixMapping(EMPTYSTR, value);
                     }
@@ -1006,24 +999,20 @@ public class SAXFilteredReader extends Reader {
         namespaces.startElement();
         chandler.startElement(namesp, elname, qelname, attrlist);
         if (empty) {
-            namespaces.endElement();
+            HashSet<String> prefixes = null;
+            if (evts.anyEnabled(evts.PREFIX_MAPPING|evts.NAMESPACES))
+                prefixes = new HashSet<String>();
             chandler.endElement(namesp, elname, qelname);
+            namespaces.endElement(prefixes);
 
             if (evts.anyEnabled(evts.PREFIX_MAPPING|evts.NAMESPACES) && 
                 prefixes != null)
             {
-                Iterator it = null;
-                for(it = prefixes.iterator(); 
-                    it.hasNext(); 
-                    namespaces.endPrefixMapping((String) it.next()));
-
                 if (evts.anyEnabled(evts.PREFIX_MAPPING)) {
-                    for(it = prefixes.iterator(); 
+                    for(Iterator it = prefixes.iterator(); 
                         it.hasNext(); 
                         chandler.endPrefixMapping((String)it.next()));
                 }
-
-                prefixHistory.pop();
             }
         }
     }
@@ -1034,6 +1023,7 @@ public class SAXFilteredReader extends Reader {
         if (chandler == null) return;
         int q, p;
         String prefix, elname, qelname, namesp, uri;
+        HashSet<String> prefixes = null;
 
         // update the locator
         pending = parsed+len;
@@ -1051,28 +1041,23 @@ public class SAXFilteredReader extends Reader {
         prefix = EMPTYSTR;
         namesp = EMPTYSTR;
 
-        HashSet prefixes = 
-            (prefixHistory.empty()) ? null : (HashSet) prefixHistory.pop();
-            
         if ((p = qelname.indexOf(':')) >= 0) {
             prefix = qelname.substring(0, p);
             elname = qelname.substring(p + 1);
         }
 
+        if (evts.anyEnabled(evts.NAMESPACES|evts.PREFIX_MAPPING))
+            prefixes = new HashSet<String>();
         uri = namespaces.getURI(prefix);
         if (uri == null) uri = EMPTYSTR;
         chandler.endElement(uri, elname, qelname);
-        namespaces.endElement();
+        namespaces.endElement(prefixes);
 
         // update the scope of namespace prefixes as necessary
         if (prefixes != null && 
             evts.anyEnabled(evts.NAMESPACES|evts.PREFIX_MAPPING)) 
         {
             Iterator i = null;
-            for(i = prefixes.iterator(); 
-                i.hasNext(); 
-                namespaces.endPrefixMapping((String)i.next()));
-
             if (evts.isEnabled(evts.PREFIX_MAPPING)) {
                 for(i = prefixes.iterator(); 
                     i.hasNext(); 
