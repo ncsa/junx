@@ -32,8 +32,8 @@ elif [ -n "$CLASSPATH" ]; then
     cp=$CLASSPATH
 else
     bindir=`dirname $prog`/
-    if [ -e "${bindir}../lib/java/junx.jar" ]; then
-        cp=${bindir}../lib/java/junx.jar
+    if [ -e "${bindir}../lib/junx.jar" ]; then
+        cp=${bindir}../lib/junx.jar
     fi
 fi
 
