@@ -10,9 +10,19 @@
     <property name="doc" value="${basedir}/doc"/>
     <property name="src" value="${basedir}/src"/>
     <property name="tests" value="${basedir}/tests"/>
+    <property name="testreports" value="${basedir}/testreports"/>
     <property name="build.sysclasspath" value="last"/>
     <property environment="env"/>
     <property name="web_deploy" value="${env.WEB_DEPLOY}"/>
+
+    <path id="classpath.build">
+      <pathelement location="${classes}" />
+      <!-- <path refid="local.jar.path"/>  -->
+    </path>
+    <path id="classpath.test">
+      <pathelement location="${tclasses}" />
+      <path refid="classpath.build"/>
+    </path>
 
     <target name="init">
         <mkdir dir="${classes}"/>
@@ -20,19 +30,43 @@
         <mkdir dir="${doc}/japi"/>
     </target>
 
+    <target name="init-tests" depends="init">
+        <mkdir dir="${tclasses}"/>
+        <mkdir dir="${testreports}"/>
+    </target>
+
     <target name="compile" depends="init">
         <echo>building source</echo>
-        <javac destdir="${classes}" debug="true"
+        <javac destdir="${classes}" debug="true" classpathref="classpath.build"
                includeAntRuntime="false" srcdir="${src}">
         </javac>
     </target>
 
-    <target name="compileTests" depends="compile">
+    <target name="compileTests" depends="init-tests,compile">
         <echo>building tests</echo>
-        <javac destdir="${tclasses}" debug="true"
-               includeAntRuntime="false" srcdir="${tests}">
+        <javac destdir="${tclasses}" debug="true" classpathref="classpath.test"
+               includeAntRuntime="true" srcdir="${tests}">
         </javac>
     </target>
+
+    <target name="test" depends="compileTests">
+        <junit printsummary="yes"  includeAntRuntime="true" haltonfailure="yes">
+          <classpath refid="classpath.test" />
+          <formatter type="plain" />
+          <batchtest todir="${testreports}">
+            <fileset dir="${tclasses}">
+              <include name="**/*Test.class" />
+            </fileset>
+          </batchtest>
+    <!--
+          <sysproperty key="test.dbfile" 
+                       value="${dir.test.src.java}/testUserDb.txt"/>
+          <sysproperty key="test.tmpdir" value="${dir.tmp}"/>
+    -->
+        </junit>
+    </target>
+
+
 
     <target name="jar" depends="compile">
         <jar destfile="${lib}/junx.jar" basedir="${classes}" />
