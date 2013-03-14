@@ -65,12 +65,16 @@ public class SAXFilteredReader extends Reader {
     //        that have already been sent.  sent >= 0
     // parsed = the number of characters from the beginning of the TextBuffer
     //        that have been parsed.  parsed >= sent
-    private int sent=0, parsed=0;
+    // cursor = the position from the start of the TextBuffer where 
+    //        unparsed characters were last retrieved.  
+    private int sent=0, parsed=0, cursor=0;
 
-    // the pending-parsed position.  This set before any call to a 
-    // ContentHandler method to the value parsed will immediately after
+    // the pending-parsed position.  This is set before any call to a 
+    // ContentHandler method to the value parsed will have immediately after
     // that method returns.  It is the effective parsed position from the
-    // perspective of the ContentHandler method.
+    // perspective of the ContentHandler method.  In other words, this will
+    // set to the end of the range of characters sent to a ContentHandler
+    // method.  
     private int pending = parsed;
 
     private ParseRequestMgr prq = null;
@@ -312,10 +316,6 @@ public class SAXFilteredReader extends Reader {
     // a buffer for reading characters from the source stream
     private char[] cbuf = new char[128];
 
-    // an iterator into the TextBuffer pointing to the next Substring
-    // of interest
-    private BufferIterator bi = new BufferIterator();
-
     // lip = the position of the offset in the current Substring relative 
     //       to the beginning of the TextBuffer.
     // lilen = the length of the current Substring
@@ -375,15 +375,16 @@ public class SAXFilteredReader extends Reader {
                         handleChars(parsed, p - lp, true);
                     } catch(SAXException ex) {
                         if (strict) throw ex;
-//                             throw new IOException("SAX processing error: " + 
-//                                                   ex.getMessage());
                     }
 
                     // handler may have changed size of buffer; use global
                     // vars (updated by handler) to reset local markers.
-//                  sub = bi.current();
-                    lp = parsed - bi.pos();
+                    sub = getSubstring(cursor);
+                    lp = parsed - cursor + sub.off;
                     p = lp + loc.getCharLength();
+                    if (sub.str().charAt(p) != '<')
+                        throw new SAXException("stream manipulation broke " +
+                                               "XML validity");
                 }
                 parsed += p - lp;
                 lp = p;
@@ -440,8 +441,8 @@ public class SAXFilteredReader extends Reader {
 
                         // handler may have changed size of buffer; use global
                         // vars (updated by handler) to reset local markers.
-//                      sub = bi.current();
-                        lp = parsed - bi.pos();
+                        sub = getSubstring(cursor);
+                        lp = parsed - cursor + sub.off;
                         p = lp + loc.getCharLength();
                     }
                     parsed += p - lp;
@@ -471,8 +472,8 @@ public class SAXFilteredReader extends Reader {
 
                         // handler may have changed size of buffer; use global
                         // vars (updated by handler) to reset local markers.
-//                      sub = bi.current();
-                        lp = parsed - bi.pos();
+                        sub = getSubstring(cursor);
+                        lp = parsed - cursor + sub.off;
                         p = lp + loc.getCharLength();
                     }
                     p += CDATA_END.length();
@@ -513,8 +514,8 @@ public class SAXFilteredReader extends Reader {
 
                         // handler may have changed size of buffer; use global
                         // vars (updated by handler) to reset local markers.
-//                      sub = bi.current();
-                        lp = parsed - bi.pos();
+                        sub = getSubstring(cursor);
+                        lp = parsed - cursor + sub.off;
                         p = lp + loc.getCharLength();
                     }
                     parsed += p - lp;
@@ -536,8 +537,8 @@ public class SAXFilteredReader extends Reader {
 
                     // handler may have changed size of buffer; use global
                     // vars (updated by handler) to reset local markers.
-//                  sub = bi.current();
-                    lp = parsed - bi.pos();
+                    sub = getSubstring(cursor);
+                    lp = parsed - cursor + sub.off;
                     p = lp + loc.getCharLength();
                 }
                 p = sub.str().length();
@@ -615,8 +616,12 @@ public class SAXFilteredReader extends Reader {
 //             System.err.println("position " + p + " out of range");
 //      }
 
-        bi.resetTo(li, p);
-        return bi.current();
+        if (li != null && li.hasNext()) {
+            cursor = p;
+            return (Substring) li.next();
+        }
+        cursor = buf.size();
+        return null;
     }
 
     /**
@@ -624,23 +629,29 @@ public class SAXFilteredReader extends Reader {
      */
     private Substring nextSubstring() throws IOException {
         Substring out = null;
+        TextBuffer.Iter li = null;
 
-        if (bi.hasNext()) {
-            out = (Substring)bi.next();
-        } 
-        else {
-            out = bi.current();
-            if (out != null) {
-                int upto = bi.pos()+out.str().length()+1;
-                int got = fillBuffer(upto);
-                TextBuffer.Iter li = buf.iterAtLast();
-                ((Substring) li.previous()).off = 1;
-                bi.resetTo(li, upto);
-                out = (got >= upto) ? (Substring) bi.current() : null;
+        if (cursor < buf.size()) {
+            li = buf.getSubstring(cursor);
+            if (li.hasNext()) {
+                // get the substring we got last time
+                out = (Substring)li.next();  
+                if (li.hasNext()) {
+                    // now go to next one
+                    cursor += out.len;
+                    return (Substring)li.next();
+                }
             }
         }
-        if (out != null) out.off = 0;
 
+        // need to fetch more characters; return next Substring
+        int upto = buf.size() + 1;
+        int got = fillBuffer(upto);
+        out = getSubstring(upto-1);
+        if (out != null) {
+            out.off = 0;
+            out.len = out.string.length();
+        }
         return out;
     }
 
@@ -699,8 +710,7 @@ public class SAXFilteredReader extends Reader {
      * @param start   the starting position of the data relative to the 
      *                   start of the text buffer
      * @param len     the number characters making up the data
-     * @return boolean   true if the buffer contents were changed enough to 
-     *                     to require character pointers to be updated
+     * @param whiteIgnorable  any surrounding white space can be ignored.  
      */
     void handleChars(int start, int len, boolean whiteIgnorable)
         throws SAXException, IOException
@@ -1191,7 +1201,7 @@ public class SAXFilteredReader extends Reader {
             // to the the start of the buffer) is at the parsed position or 
             // before, we will interpret the new text as already parsed.
             if (bpos <= parsed) parsed += chars.length();
-            if (bpos < bi.pos()) bi.pos += chars.length();
+            if (bpos < cursor) cursor += chars.length();
             if (pos <= loc.getCharNumber()) {
                 loc.setChars(loc.getCharNumber()+chars.length(), 
                              loc.getCharLength());
@@ -1249,10 +1259,16 @@ public class SAXFilteredReader extends Reader {
                     }
                 }
 
-                if (bpos+len <= bi.pos())
-                    bi.pos += chars.length() - len;
-                else if (bpos+len > bi.pos && bpos+chars.length() <= bi.pos)
-                    bi.pos = bpos + chars.length();
+                if (bpos+len <= cursor)
+                    // if the end position of what we took out is before the 
+                    // cursor, advance the cursor by the # of extra characters
+                    // added.  (If net loss, cursor is reduced.)
+                    cursor += chars.length() - len;
+                else if (bpos+len > cursor && bpos+chars.length() <= cursor)
+                    // if the range we took out straddled the cursor but 
+                    // the range put in fell below the cursor, move cursor to 
+                    // end of range of characters added.  
+                    cursor = bpos + chars.length();
 
                 // update the locator position
                 if (pos + (long)len <= loc.getCharNumber()) {
@@ -1546,116 +1562,6 @@ public class SAXFilteredReader extends Reader {
             }
 
             return sb.toString();
-        }
-    }
-
-    class BufferIterator implements ListIterator {
-        private TextBuffer.Iter li = null;
-        private Substring cur = null;
-        int pos = 0;
-
-        public BufferIterator() { }
-
-        public BufferIterator(TextBuffer.Iter tbiter, int requestedPosition) {
-            resetTo(tbiter, requestedPosition);
-        }
-
-        public void resetTo(TextBuffer.Iter tbiter, int requestedPosition) {
-            li = tbiter;
-            if (li != null && li.hasNext()) {
-                cur = (Substring) li.next();
-                pos = requestedPosition - cur.off;
-            } 
-            else {
-                cur = null;
-                pos = buf.size();
-            }
-        }
-
-        /**
-         * return the object returned by the last call to next() or previous()
-         */
-        public Substring current() { return cur; }
-
-        void unsupp(String op) {
-            throw new UnsupportedOperationException(op);
-        }
-
-        /**
-         * return the index of the first character in the current substring
-         * relative to the start of the document.
-         */
-        public int pos() { return pos; }
-
-        public final void add(Object o) { unsupp("add"); }
-        public final void set(Object o) { unsupp("set"); }
-        public final void remove() { unsupp("remove"); }
-        public final boolean hasNext() { return li.hasNext(); }
-        public final boolean hasPrevious() { return li.hasPrevious(); }
-        public final int nextIndex() { return li.nextIndex(); }
-        public final int previousIndex() { return li.previousIndex(); }
-
-        public final Object next() {
-            Substring prev = cur;
-            try {
-                if (li.hasNext()) {
-                    cur = (Substring)li.next();
-                } 
-                else {
-                    int upto = pos + prev.string.length();
-                    if (fillBuffer(upto) < upto)
-                        cur = null;
-                    else
-                        cur = (Substring)li.next();
-                }
-                pos += prev.string.length();
-            }
-            catch(ConcurrentModificationException ex)
-            {
-                li = buf.getSubstring(pos + prev.string.length());
-                if (li == null) {
-                    li = buf.iterAtLast();
-                    cur = null;
-                    pos = buf.size();
-                } 
-                else {
-                    pos += prev.string.length();
-                }
-            }
-            catch(IOException ex) {
-                throw new IOExcep(ex);
-            }
-
-            return cur;
-        }
-
-        public final Object previous() {
-            try {
-                if (li.hasPrevious()) {
-                    cur = (Substring)li.previous();
-                    pos -= cur.str().length();
-                } 
-                else {
-                    li = buf.getSubstring(0);
-                    cur = null;
-                    pos = 0;
-                }
-            }
-            catch (ConcurrentModificationException ex) {
-                li = buf.getSubstring(pos);
-                return previous();
-            }
-
-            return cur;
-        }
-
-        public class IOExcep extends RuntimeException {
-            IOException wrapped = null;
-            public IOExcep(java.io.IOException ex) {
-                super(ex.getMessage());
-                wrapped = ex;
-            }
-            public IOException getException() { return wrapped; }
         }
     }
 } 
