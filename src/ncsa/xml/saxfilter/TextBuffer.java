@@ -18,8 +18,8 @@ import java.util.NoSuchElementException;
 
 public class TextBuffer {
     LinkedList deque = new LinkedList();
-    int start = 0;
-    int length = 0;
+    int start = 0;  // characters before that at this pos have been discarded
+    int length = 0; // the total length the valid data
 
     public TextBuffer() { }
 
@@ -38,6 +38,29 @@ public class TextBuffer {
             length += s.length();
         }
         return this;
+    }
+
+    public String toString() {
+        StringBuffer sb = new StringBuffer();
+        ListIterator i = deque.listIterator();
+        if (! i.hasNext()) return sb.toString();
+
+        Substring ss = (Substring) i.next();
+        int n = start;
+        while (n >= ss.str().length() && i.hasNext()) {
+            n -= ss.str().length();
+            ss = (Substring) i.next();
+        }
+        if (n >= ss.str().length()) return sb.toString();
+
+        if (n > 0)
+            sb.append(ss.str().substring(n));
+        else
+            sb.append(ss.str());
+        while (i.hasNext()) 
+            sb.append(((Substring) i.next()).str());
+
+        return sb.toString();
     }
 
     /**
@@ -77,7 +100,9 @@ public class TextBuffer {
      * @throws StringIndexOutOfBounds  if pos is out of bounds
      */
     public TextBuffer insert(String s, int pos) {
-        if (pos < 0 || pos >= length)
+        if (pos == length) 
+            return append(s);
+        if (pos < 0 || pos > length)
             throw new StringIndexOutOfBoundsException(pos);
 
         // get substring containing insert position
@@ -93,6 +118,7 @@ public class TextBuffer {
         // replace the substring's contents; any iterators pointing to this
         // substring remains valid.
         sub.string = new String(newstr);
+        sub.len = sub.string.length() - sub.off;
 
         // update the total size of our buffer
         length += s.length();
@@ -107,8 +133,11 @@ public class TextBuffer {
      * @throws StringIndexOutOfBounds  if pos is out of bounds
      */
     public TextBuffer substitute(String s, int pos, int len) {
-        if (pos < 0 || pos >= length)
+        if (pos == length)
+            return append(s);
+        if (pos < 0 || pos > length)
             throw new StringIndexOutOfBoundsException(pos);
+        if (pos+len > length) len = length-pos;
 
         // get the substring containing start of substitution 
         Iter iter = getSubstring(pos);
@@ -125,6 +154,7 @@ public class TextBuffer {
         len -= sub.string.length() - sub.off;
 
         sub.string = newstr.toString();
+        sub.len = sub.string.length() - sub.off;
 
         while(len > 0 && iter.hasNext())  {
             sub = (Substring)iter.next();
@@ -196,7 +226,10 @@ public class TextBuffer {
      * return the first Substring in this buffer
      */
     public Substring getFirst() {
-        return (Substring)deque.getFirst();
+        Substring out = (Substring)deque.getFirst();
+        out.off = start;
+        out.len = out.string.length() - out.off;
+        return out;
     }
 
     /**
