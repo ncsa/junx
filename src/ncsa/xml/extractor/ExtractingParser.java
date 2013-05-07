@@ -1,5 +1,5 @@
 package ncsa.xml.extractor;
-
+ 
 import ncsa.xml.sax.Namespaces;
 import ncsa.xml.saxfilter.SAXFilteredReader;
 import ncsa.xml.saxfilter.SAXFilterContentHandler;
