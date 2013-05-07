@@ -124,8 +124,9 @@ public class SchemaLocation implements Cloneable {
     static void addLocation(String nsuri, String location, 
                             Properties mappings, Vector order) 
     {
+        boolean readd = mappings.containsKey(nsuri);
         mappings.setProperty(nsuri, location);
-        order.addElement(nsuri);
+        if (! readd) order.addElement(nsuri);
     }
 
     /**

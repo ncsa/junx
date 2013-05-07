@@ -214,8 +214,11 @@ public class SAXFilteredReader extends Reader {
      * read a single character
      */
     public int read() throws IOException {
-        int n;
-        while((n = read(cb, 0, 1)) == 0) { }
+        int n=0;
+        while(n == 0) { 
+            n = read(cb, 0, 1);
+            if (n == 0 && cb[0] == pausechar) break;
+        }
 
         if (n < 0)
             return -1;

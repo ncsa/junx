@@ -528,6 +528,11 @@ public class ExtractingParser implements Extractor {
         }
 
         public void close() {
+            try {
+                if (! atend) {
+                    while (read() >= 0);
+                }
+            } catch (IOException ex) { }
             atend = true;
             closed = true;
         }
