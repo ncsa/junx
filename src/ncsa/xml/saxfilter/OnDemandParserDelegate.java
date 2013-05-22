@@ -39,7 +39,7 @@ public class OnDemandParserDelegate implements OnDemandParser {
      * @param enableAll  if true, all events will be enabled
      */
     public OnDemandParserDelegate(boolean enableAll) {
-        this(enableAll ? 511 : 0);
+        this(enableAll ? ALL_EVENTS : 0);
     }
 
     /**
@@ -56,7 +56,7 @@ public class OnDemandParserDelegate implements OnDemandParser {
      * return true if given events are enabled
      * @param events   the OR-ed set of events to check
      */
-    public final boolean isEnabled(int events) {
+    public boolean isEnabled(int events) {
         return (this.events & events) == events;
     }
 
@@ -64,7 +64,7 @@ public class OnDemandParserDelegate implements OnDemandParser {
      * return true if any of the given events are enabled
      * @param events   the OR-ed set of events to check
      */
-    public final boolean anyEnabled(int events) {
+    public boolean anyEnabled(int events) {
         return (this.events & events) > 0;
     }
 
@@ -84,7 +84,7 @@ public class OnDemandParserDelegate implements OnDemandParser {
      * @param events   the set of event codes defined by this interface,
      *                 OR-ed together
      */
-    public final void enableEvents(int events) {
+    public void enableEvents(int events) {
         this.events |= events;
     }
 
@@ -100,7 +100,7 @@ public class OnDemandParserDelegate implements OnDemandParser {
      * @param events   the set of event codes defined by this interface,
      *                 OR-ed together
      */
-    public final void disableEvents(int events) {
+    public void disableEvents(int events) {
         this.events &= ~events;
     }
 
@@ -117,7 +117,7 @@ public class OnDemandParserDelegate implements OnDemandParser {
      *                 be disabled.
      */
     public void enableCharacters(boolean yes) {
-        setEvents(1, yes);
+        setEvents(CHARACTERS, yes);
     }
 
     /**
@@ -126,7 +126,7 @@ public class OnDemandParserDelegate implements OnDemandParser {
      *                 be disabled.
      */
     public void enableDocument(boolean yes) {
-        setEvents(2, yes);
+        setEvents(DOCUMENT, yes);
     }
 
     /**
@@ -138,7 +138,7 @@ public class OnDemandParserDelegate implements OnDemandParser {
      *                 will be disabled.
      */
     public void enableNamespaces(boolean yes) {
-        setEvents(128, yes);
+        setEvents(NAMESPACES, yes);
     }
 
     /**
@@ -147,7 +147,7 @@ public class OnDemandParserDelegate implements OnDemandParser {
      *                 be disabled.
      */
     public void enablePrefix(boolean yes) {
-        setEvents(256, yes);
+        setEvents(PREFIX_MAPPING, yes);
     }
 
     /**
@@ -156,7 +156,7 @@ public class OnDemandParserDelegate implements OnDemandParser {
      *                 be disabled.
      */
     public void enableElement(boolean yes) {
-        setEvents(4, yes);
+        setEvents(ELEMENT, yes);
     }
 
     /**
@@ -166,7 +166,7 @@ public class OnDemandParserDelegate implements OnDemandParser {
      *                 be disabled.
      */
     public void enableProcInstr(boolean yes) {
-        setEvents(64, yes);
+        setEvents(PROC_INSTR, yes);
     }
 
     /**
@@ -175,7 +175,7 @@ public class OnDemandParserDelegate implements OnDemandParser {
      *                 be disabled.
      */
     public void enableSkippedEntity(boolean yes) {
-        setEvents(32, yes);
+        setEvents(SKIPPED_ENTITY, yes);
     }
 
     /**
@@ -186,7 +186,7 @@ public class OnDemandParserDelegate implements OnDemandParser {
      * @see OnDemandParser#loadAttributes(Set)
      */
     public void enableAttributes(boolean yes) {
-        setEvents(8, yes);
+        setEvents(ATTRIBUTES, yes);
     }
 
     /**
