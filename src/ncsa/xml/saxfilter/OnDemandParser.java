@@ -25,6 +25,10 @@ import java.util.Set;
  * and preparation of XML components that are not of interest to the 
  * ContentHandler.  This interface can be passed to a SAXFilterContentHandler
  * via its setParseRequestMgr() method prior to the start of parsing.
+ * <p>
+ * Note that the parser is not required to not send events the handler is not 
+ * interested in.  That is, if a handler uses this interface to say it is 
+ * not interested in a particular event, the parser may send the event anyway.
  */
 public interface OnDemandParser {
 

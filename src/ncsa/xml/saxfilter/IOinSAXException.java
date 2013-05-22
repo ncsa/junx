@@ -5,16 +5,15 @@ import org.xml.sax.SAXException;
 
 /**
  * an indication of an IOException during SAX processing.
- *
+ * <p>
  * With a {@link SAXFilterContentHandler} in which it is possible to 
  * insert data into the character stream, it is possible to encounter 
  * IOExceptions.  The SAX ContentHandler interface, however, only permits 
- * emitting SAXExceptions.  This class allows the original IOException to 
- * be wrapped in a SAXException for later retrieval.
+ * emitting SAXExceptions.  While SAXException can wrap an IOException 
+ * already, this class allows a wrapped IOException to be identified 
+ * by type (for use, e.g., in catch clauses).  
  */
 public class IOinSAXException extends SAXException {
-
-    protected IOException wrapped = null;
 
     /**
      * wrap an IO exception
@@ -22,8 +21,16 @@ public class IOinSAXException extends SAXException {
      * @param ioex    the original IOException being wrapped
      */
     public IOinSAXException(String msg, IOException ioex) {
-        super(msg);
-        wrapped = ioex;
+        super(msg, ioex);
+    }
+
+    /**
+     * wrap an IO exception
+     * @param msg     a custom message
+     * @param ioex    the original IOException being wrapped
+     */
+    public IOinSAXException(IOException ioex) {
+        super("IOException during XML processing: "+ioex.getMessage(), ioex);
     }
 
     /**
@@ -31,12 +38,12 @@ public class IOinSAXException extends SAXException {
      * @param msg     a custom message
      */
     public IOinSAXException(String msg) {
-        this(msg, null);
+        super(msg);
     }
 
     /**
      * return the wrapped IOException
      */
-    public IOException getIOException() { return wrapped; }
+    public IOException getIOException() { return (IOException) getException(); }
 
 }

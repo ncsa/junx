@@ -20,15 +20,17 @@ import java.io.Reader;
 /**
  * an interface for controlling the flow from a SAXFilteredReader.  It allows 
  * an XML ContentHandler to skip over sections of the XML document based on
- * its content.
+ * its content.  It also allows the data to be altered, either by changing 
+ * XML data or inserting new data into the stream sent through the Reader.  
  */
 public interface SAXFilterFlowControl {
 
     /**
      * return a reference to a CharContentLocator for obtaining character
-     * positions of content events.  The same locator should be usable
-     * throughout the parsing of a document; thus, this method need only 
-     * be called once.  
+     * positions of content events.  This object is shared with the parser
+     * which updates it as XML data is parsed.  Thus, the same locator 
+     * should be usable throughout the parsing of a document, making it 
+     * necessary to call this method only once. 
      */
     public CharContentLocator getCharLocator();
 
