@@ -358,7 +358,7 @@ public class SAXFilteredReader extends Reader {
         if (sub == null) return parsed - sent;
 
         // p = a pointer into the current Substring to a character position 
-        //     of interest
+        //     of interest.  Initialized to local position of parsed.
         int p = sub.off;
 
         // lp = (mneumonic: local parsed) a pointer indicating the position 
@@ -389,7 +389,7 @@ public class SAXFilteredReader extends Reader {
                         throw new SAXException("stream manipulation broke " +
                                                "XML validity");
                 }
-                parsed += p - lp;
+                parsed += p - lp;  // move pointers past text (to '<')
                 lp = p;
 
                 if (sub.str().startsWith(COMMENT_START, p)) {
@@ -448,7 +448,7 @@ public class SAXFilteredReader extends Reader {
                         lp = parsed - cursor + sub.off;
                         p = lp + loc.getCharLength();
                     }
-                    parsed += p - lp;
+                    parsed += p - lp;  // move pointers past <?...?>
                     lp = p;
                     if (sub == null) break;
                 } 
@@ -551,8 +551,8 @@ public class SAXFilteredReader extends Reader {
 
             applySkip();
 
-            if ((parsed-sent < nchars || parseAhead) &&
-                (sub == null || p >= sub.str().length() || p < 0))
+            if ((parsed-sent < nchars || parseAhead) &&  // need more to send
+                (sub == null || p >= sub.str().length() || p < 0)) // sub used up
             {
                 lp -= sub.str().length();
                 sub = nextSubstring();
@@ -641,7 +641,7 @@ public class SAXFilteredReader extends Reader {
                 out = (Substring)li.next();  
                 if (li.hasNext()) {
                     // now go to next one
-                    cursor += out.len;
+                    cursor += out.str().length() - out.off;
                     return (Substring)li.next();
                 }
             }

@@ -161,6 +161,7 @@ public class TextBuffer {
             if (sub.string.length() <= len) {
                 len -= sub.string.length();
                 sub.string = new String();
+                iter.remove();
             } 
             else {
                 sub.string = sub.string.substring(len);
