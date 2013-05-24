@@ -6,6 +6,7 @@ import java.io.Writer;
 import java.io.FileWriter;
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 
 import javax.xml.namespace.QName;
 import org.xml.sax.SAXException;
@@ -44,6 +45,11 @@ public class XMLStreamEditor {
     public void addContentHandler(ContentHandler ch) {
         handlers.addHandler(ch);
     }
+
+    /**
+     * provide an iterator to the currently added ContentHandlers
+     */
+    public Iterator<ContentHandler> handlers() { return handlers.iterator(); }
 
     /**
      * return a Reader that will serve up the modified XML content

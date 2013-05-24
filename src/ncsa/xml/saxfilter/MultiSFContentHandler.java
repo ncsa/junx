@@ -9,13 +9,15 @@ import org.xml.sax.SAXException;
 import java.util.LinkedList;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Iterator;
 
 /**
  * a {@link SAXFilterContentHandler} that will pass events onto a sequence 
  * of ContentHandlers.
  */
-public class MultiSFContentHandler implements SAXFilterContentHandler {
-
+public class MultiSFContentHandler 
+    implements SAXFilterContentHandler, Iterable<ContentHandler>
+{
     private LinkedList<ContentHandler> delegates = 
         new LinkedList<ContentHandler>();
     LinkedList<OnDemandParser> odpdels = new LinkedList<OnDemandParser>();
@@ -40,6 +42,11 @@ public class MultiSFContentHandler implements SAXFilterContentHandler {
     public void addHandler(ContentHandler handler) {
         delegates.add(handler);
     }
+
+    /**
+     * provide an iterator to the currently added ContentHandlers
+     */
+    public Iterator<ContentHandler> iterator() { return delegates.iterator(); }
 
     /**
      * receive an interface for controlling parsing
