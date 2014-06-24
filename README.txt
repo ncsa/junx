@@ -6,9 +6,10 @@ National Virtual Observatory
 
 INTRODUCTION
 
-The genesis of this utilites package comes work supporting the NCSA
-BIMA Archive.  It contains general purpose XML utilities that I have
-found useful on multiple occasions.  These include 
+The genesis of this utilites package comes from work supporting the
+NCSA BIMA Archive and the National Virtual Observatory (NVO).  It
+contains general purpose XML utilities that I have found useful on
+multiple occasions.  These include
 
 Validate (ncsa.xml.validation):
    an application that can be run from the command line to validate
